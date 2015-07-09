@@ -3,7 +3,7 @@ Magento full page cache warmer
 
 If you're running Magento and using a full page cache like [Lesti FPC](https://gordonlesti.com/projects/lestifpc/), once you have the FPC configured and working, you might consider warming the cache so all the pages load quick for your customers the first time they hit them.
 
-This FPC relies on a sitemap.xml file; you can read how to do that [here](http://alanstorm.com/generating_google_sitemaps_in_magento). Once you have a sitemap generated (and an FPC configured), you're good to hit the site with the cache warmer.
+`wfpc` relies on a sitemap.xml file; you can read how to do that [here](http://alanstorm.com/generating_google_sitemaps_in_magento). Once you have a sitemap generated (and an FPC configured), you're good to hit the site with the cache warmer.
 
 ## Usage
 ### Testing Performance
