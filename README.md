@@ -43,3 +43,4 @@ If you have a large site with a lot of URLs to warm, you might consider running 
   - SimpleXML extension
   - allow_url_fopen = 1
 * The code is nothing to brag about, I put it together in a few hours for my own needs. If folks like it, I can clean it up.
+* This script will actually work for *any* site that has a sitemap.xml file. If you have an FPC mechanism on a site running something other than Magento, you may still find the script useful!
