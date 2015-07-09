@@ -32,6 +32,10 @@ To actually warm the FPC, use `-w` as the first argument. `wfpc` will fetch each
 
 If you have a large site with a lot of URLs to warm, you might consider running `wfpc` within a [`screen`](http://www.gnu.org/software/screen/manual/screen.html) session.
 
+## FPC configuration tips
+ * Make sure you have a reasonably high TTL for your FPC. If your pages expire from the FPC quickly, there's not much point to warming them all!
+ * If you're using a memory-based store for your FPC like APC, Redis or Memcache, keep an eye on the usage of the store as your cache is warming. For example, if you have a large site you want to cache, you may overrun your cache storage limit if you're not careful!
+
 ## Notes of interest
 * The script should run on Windows, but I haven't tested it there. You'll probably need to run it as `php wfpc args...` in that case.
 * The script relies upon a few things in PHP
