@@ -103,9 +103,10 @@ function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
         echo 'Found ' . $iNumUrls . ' URLs to crawl' . PHP_EOL;
     }
     $iTotalDownloadTime = 0;
-    foreach($aMatches as $sUrl) {
+    foreach($aMatches as $i => $sUrl) {
         $iPageStartTime = microtime(true);
-        echo 'Fetching ' . $sUrl . PHP_EOL;
+        $iCur = $i + 1;
+        echo "($iCur/$iNumUrls) - Fetching " . $sUrl . PHP_EOL;
         file_get_contents($sUrl);
     
         $iTotalDownloadTime += microtime(true) - $iPageStartTime;
