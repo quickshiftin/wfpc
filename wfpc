@@ -9,6 +9,8 @@
  * In reality this script will work on any site that provides a sitemap.xml file.
  * Please don't use the script to attack websites! Frankly, it won't even work well as
  * a DOS attack, because it executes each request synchronously.
+ *
+ * Copyright Nathan Nobbe 2015.
  */
 
 if($argc < 2) {
@@ -88,14 +90,18 @@ function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
     // Truncate the list of URLs to 10 if we're in test mode
     //--------------------------------------------------------------------------------
     if($bTestOnly === true && $iNumUrls > 10) {
-        $aMatches = array_slice($aMatches, 0, 10);
+        $aMatches = array_random($aMatches, 10);
         $iNumUrls = 10;
     }
 
     //--------------------------------------------------------------------------------
     // Download the URLs, timing each one
     //--------------------------------------------------------------------------------
-    echo 'Found ' . $iNumUrls . ' URLs to crawl' . PHP_EOL;
+    if($bTestOnly) {
+        echo "Testing with $iNumUrls URLs" . PHP_EOL;
+    } else {
+        echo 'Found ' . $iNumUrls . ' URLs to crawl' . PHP_EOL;
+    }
     $iTotalDownloadTime = 0;
     foreach($aMatches as $sUrl) {
         $iPageStartTime = microtime(true);
@@ -111,7 +117,10 @@ function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
     //--------------------------------------------------------------------------------
     // Report the results
     //--------------------------------------------------------------------------------
-    echo 'Finished warming your Magento FPC' . PHP_EOL;
+    $sFinishType = 'warming';
+    if($bTestOnly)
+        $sFinishType = 'testing';
+    echo "Finished $sFinishType your Magento site performance" . PHP_EOL;
     echo 'Total download time (in seconds)   : ' . $iTotalDownloadTime . PHP_EOL;
     echo 'Total download time (formatted)    : ' . format_milli($iTotalDownloadTime * 1000) . PHP_EOL;
     echo 'Average page time (in milliseconds): ' . $iTotalDownloadTime * 1000 / $iNumUrls . PHP_EOL;
@@ -144,4 +153,15 @@ function usage()
     echo 'Warm the Magento cache                                  : wfpc -w [-d=delay] <sitemap url>' . PHP_EOL . PHP_EOL;
     echo 'The last form of the command allows a -d option to place a pause of X number of seconds between request' . PHP_EOL;
     exit();
+}
+
+function array_random($arr, $num = 1)
+{
+    shuffle($arr);
+
+    $r = array();
+    for ($i = 0; $i < $num; $i++) {
+        $r[] = $arr[$i];
+    }
+    return $num == 1 ? $r[0] : $r;
 }
