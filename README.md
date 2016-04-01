@@ -34,6 +34,7 @@ If you have a large site with a lot of URLs to warm, you might consider running 
 
 ## FPC configuration tips
  * Make sure you have a reasonably high TTL for your FPC. If your pages expire from the FPC quickly, there's not much point to warming them all!
+ * Disk-based FPC caching seems practically just as beneficial as memory-based caching on SSD servers. Unless you really need too, you're probably better off only using memory to cache core Magento data and using the disk for your FPC.
  * If you're using a memory-based store for your FPC like APC, Redis or Memcache, keep an eye on the usage of the store as your cache is warming. For example, if you have a large site you want to cache, you may overrun your cache storage limit if you're not careful!
 
 ## Notes of interest
