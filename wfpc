@@ -54,6 +54,18 @@ switch($argv[1]) {
 function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
 {
     //--------------------------------------------------------------------------------
+    // Stream context for file_get_contents(), some webservers return a 503 error
+    // when no user agent is set.
+    //--------------------------------------------------------------------------------
+    $streamContext = stream_context_create(array(
+        'http' => array(
+            'header' => array(
+                'User-Agent: WFPC Cache Warmer'
+            )
+        )
+    ));
+
+    //--------------------------------------------------------------------------------
     // Grab the sitemap URL from the CLI and verify it looks like a URL
     //--------------------------------------------------------------------------------
     if(filter_var($sSitemapUrl, FILTER_VALIDATE_URL) === false) {
@@ -63,7 +75,7 @@ function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
     //--------------------------------------------------------------------------------
     // Try downloading the sitemap file
     //--------------------------------------------------------------------------------
-    $sSitemapXml = file_get_contents($sSitemapUrl);
+    $sSitemapXml = file_get_contents($sSitemapUrl, false, $streamContext);
     if(!$sSitemapXml) {
         die('Unable to download the sitemap file at $sSitemapUrl' . PHP_EOL);
     }
@@ -107,7 +119,7 @@ function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
         $iPageStartTime = microtime(true);
         $iCur = $i + 1;
         echo "($iCur/$iNumUrls) - Fetching " . $sUrl . PHP_EOL;
-        file_get_contents($sUrl);
+        file_get_contents($sUrl, false, $streamContext);
     
         $iTotalDownloadTime += microtime(true) - $iPageStartTime;
 
