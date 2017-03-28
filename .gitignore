@@ -1,0 +1,12 @@
+# emacs editor backup files
+*~
+\#*#
+.#*
+
+# a local apc web interface I slammed into the app
+public/apc.php
+
+# vim editor backups
+*.swp
+*.swo
+*.swn

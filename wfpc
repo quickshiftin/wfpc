@@ -13,25 +13,33 @@
  * Copyright Nathan Nobbe 2015.
  */
 
+// Load the backend class
+require './MageCacheWarmer.php';
+
 if($argc < 2) {
     usage();
 }
 
-$sMode = $argv[1];
+$sMode  = $argv[1];
+$sFunc  = 'warm';
+$iDelay = 0;
 switch($argv[1]) {
     case '-h' : usage(); break;
     case '-t' :
         if($argc > 3) {
             usage();
         }
-        run($argv[2], 0, true);
+
+        $sFunc = 'test';
+        $sUrl  = $argv[2];
         break;
     case '-w':
         if($argc < 3 || $argc > 4) {
             usage();
         }
+
         if($argc == 3) {
-            run($argv[2]);
+            $sUrl = $argv[2];
         }
         elseif($argc == 4) {
             list($option, $seconds) = explode('=', $argv[2]);
@@ -41,115 +49,47 @@ switch($argv[1]) {
             } else {
                 $iDelay = $seconds;
             }
-            run($argv[3], $iDelay);
+
+            $sUrl = $argv[2];
         }
         break;
     default:
         usage();
 }
 
-/**
- * Run the tool across the given set of URLs.
- */
-function run($sSitemapUrl, $iDelay=0, $bTestOnly=false)
-{
-    //--------------------------------------------------------------------------------
-    // Stream context for file_get_contents(), some webservers return a 503 error
-    // when no user agent is set.
-    //--------------------------------------------------------------------------------
-    $streamContext = stream_context_create(array(
-        'http' => array(
-            'header' => array(
-                'User-Agent: WFPC Cache Warmer'
-            )
-        )
-    ));
+try {
+    $oMageCacheWarmer = new MageCacheWarmer($argv[2], 'echoCallback');
+    $fSpeedup         = $oMageCacheWarmer->loadSitemap()->$sFunc();
 
-    //--------------------------------------------------------------------------------
-    // Grab the sitemap URL from the CLI and verify it looks like a URL
-    //--------------------------------------------------------------------------------
-    if(filter_var($sSitemapUrl, FILTER_VALIDATE_URL) === false) {
-        die("$sSitemapUrl is not a valid URL" . PHP_EOL);
-    }
-
-    //--------------------------------------------------------------------------------
-    // Try downloading the sitemap file
-    //--------------------------------------------------------------------------------
-    $sSitemapXml = file_get_contents($sSitemapUrl, false, $streamContext);
-    if(!$sSitemapXml) {
-        die('Unable to download the sitemap file at $sSitemapUrl' . PHP_EOL);
-    }
-
-    //--------------------------------------------------------------------------------
-    // Try to parse the sitemap file via Simple XML
-    //--------------------------------------------------------------------------------
-    try {
-        $oSitemap = new SimpleXMLElement($sSitemapXml);
-    } catch(Exception $e) {
-        die('Failed to parse the sitemap file' . PHP_EOL . $e->getMessage() . PHP_EOL);
-    }
-
-    //--------------------------------------------------------------------------------
-    // Extract the list of URLs from the sitemap that we intend to crawl
-    //--------------------------------------------------------------------------------
-    $aDocNamespaces = $oSitemap->getDocNamespaces();
-    $sXmlns         = array_shift($aDocNamespaces);
-    $oSitemap->registerXPathNamespace('sitemap', $sXmlns);
-    $aMatches = $oSitemap->xpath("//sitemap:loc");
-    $iNumUrls = count($aMatches);
-
-    //--------------------------------------------------------------------------------
-    // Truncate the list of URLs to 10 if we're in test mode
-    //--------------------------------------------------------------------------------
-    if($bTestOnly === true && $iNumUrls > 10) {
-        $aMatches = array_random($aMatches, 10);
-        $iNumUrls = 10;
-    }
-
-    //--------------------------------------------------------------------------------
-    // Download the URLs, timing each one
-    //--------------------------------------------------------------------------------
-    if($bTestOnly) {
-        echo "Testing with $iNumUrls URLs" . PHP_EOL;
+    if($sFunc == 'test') {
+        reportResults($oMageCacheWarmer->getAvgDownloadTime(), true);
     } else {
-        echo 'Found ' . $iNumUrls . ' URLs to crawl' . PHP_EOL;
+        reportResults($oMageCacheWarmer->getAvgDownloadTime());
+        echo 'Speedup is ' . $fSpeedup . '%' . PHP_EOL; 
     }
-    $iTotalDownloadTime = 0;
-    foreach($aMatches as $i => $sUrl) {
-        $iPageStartTime = microtime(true);
-        $iCur = $i + 1;
-        echo "($iCur/$iNumUrls) - Fetching " . $sUrl . PHP_EOL;
-        file_get_contents($sUrl, false, $streamContext);
-    
-        $iTotalDownloadTime += microtime(true) - $iPageStartTime;
-
-        // Sleep between requests if we're told to
-        sleep($iDelay);
-    }
-
-    //--------------------------------------------------------------------------------
-    // Report the results
-    //--------------------------------------------------------------------------------
-    $sFinishType = 'warming';
-    if($bTestOnly)
-        $sFinishType = 'testing';
-    echo "Finished $sFinishType your Magento site performance" . PHP_EOL;
-    echo 'Total download time (in seconds)   : ' . $iTotalDownloadTime . PHP_EOL;
-    echo 'Total download time (formatted)    : ' . format_milli($iTotalDownloadTime * 1000) . PHP_EOL;
-    echo 'Average page time (in milliseconds): ' . $iTotalDownloadTime * 1000 / $iNumUrls . PHP_EOL;
+} catch(Exception $e) {
+    echo "Cache warmer crashed with error: " . PHP_EOL;
+    echo $e->getMessage();
+    exit(1);
 }
 
 /**
- * Format milliseconds nicely.
+ * echo messages from the underlying class.
  */
-function format_milli($ms)
+function echoCallback($sMsg)
 {
-    $ms = (int)$ms;
-    return
-        floor($ms/3600000) . ':' .                        // hours
-        floor($ms/60000) . ':' .                          // minutes
-        floor(($ms % 60000) / 1000) . '.' .               // seconds
-        str_pad(floor($ms % 1000), 3, '0', STR_PAD_LEFT); // milliseconds
+    echo $sMsg;
+}
+
+/**
+ * Report the results
+ */
+function reportResults($fAvgTime, $bTest=false)
+{
+    $sFinishType = $bTest ? 'testing' : 'warming';
+
+    echo "Finished $sFinishType your Magento site performance" . PHP_EOL;
+    echo 'Average page time (in milliseconds): ' . $fAvgTime . PHP_EOL;
 }
 
 /**
@@ -166,15 +106,4 @@ function usage()
     echo 'Warm the Magento cache                                  : wfpc -w [-d=delay] <sitemap url>' . PHP_EOL . PHP_EOL;
     echo 'The last form of the command allows a -d option to place a pause of X number of seconds between request' . PHP_EOL;
     exit();
-}
-
-function array_random($arr, $num = 1)
-{
-    shuffle($arr);
-
-    $r = array();
-    for ($i = 0; $i < $num; $i++) {
-        $r[] = $arr[$i];
-    }
-    return $num == 1 ? $r[0] : $r;
 }

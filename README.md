@@ -1,5 +1,6 @@
 # wfpc
-Magento full page cache warmer
+
+FREE Magento full page cache warmer
 
 If you're running Magento and using a full page cache like [Lesti FPC](https://gordonlesti.com/projects/lestifpc/), once you have the FPC configured and working, you might consider warming the cache so all the pages load quick for your customers the first time they hit them.
 
@@ -30,9 +31,20 @@ To actually warm the FPC, use `-w` as the first argument. `wfpc` will fetch each
 ./wfpc -w -d=1 http://mymagentosite.com/sitemap.xml
 ```
 
+The warmer will run an initial test, warm your entire site, then test again and report on performance gain
+
+```shell
+Finished warming your Magento site performance
+Average page time (in milliseconds): 517.31648445129
+Speedup is 75.07%
+```
+
 If you have a large site with a lot of URLs to warm, you might consider running `wfpc` within a [`screen`](http://www.gnu.org/software/screen/manual/screen.html) session.
 
-## FPC configuration tips
+## Magento 2 FPC configuration tips
+ * Install and configure Varnish, that's [the recommendation from Magento](http://devdocs.magento.com/guides/v2.0/config-guide/varnish/config-varnish.html)
+
+## Magento 1 FPC configuration tips
  * Make sure you have a reasonably high TTL for your FPC. If your pages expire from the FPC quickly, there's not much point to warming them all!
  * Disk-based FPC caching seems practically just as beneficial as memory-based caching on SSD servers. Unless you really need too, you're probably better off only using memory to cache core Magento data and using the disk for your FPC.
  * If you're using a memory-based store for your FPC like APC, Redis or Memcache, keep an eye on the usage of the store as your cache is warming. For example, if you have a large site you want to cache, you may overrun your cache storage limit if you're not careful!
@@ -43,5 +55,4 @@ If you have a large site with a lot of URLs to warm, you might consider running 
   - Filter extension
   - SimpleXML extension
   - allow_url_fopen = 1
-* The code is nothing to brag about, I put it together in a few hours for my own needs. If folks like it, I can clean it up.
 * This script will actually work for *any* site that has a sitemap.xml file. If you have an FPC mechanism on a site running something other than Magento, you may still find the script useful!
