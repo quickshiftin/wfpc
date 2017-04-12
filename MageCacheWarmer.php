@@ -83,7 +83,7 @@ class MageCacheWarmer
     public function warm()
     {
         // Run the initial test
-        $this->test($sSitemapUrl);
+        $this->test($this->_sSitemapUrl);
 
         $fOrigAvgTime = $this->_fAvgDownloadTime;
 
