@@ -16,17 +16,21 @@
 // Load the backend class
 require './MageCacheWarmer.php';
 
-if($argc < 2) {
+define('MINARGC', 2);
+define('MAXARGC', 4);
+
+if($argc < MINARGC) {
     usage();
 }
 
 $sMode  = $argv[1];
 $sFunc  = 'warm';
 $iDelay = 0;
+$iUnsecure = 1;
 switch($argv[1]) {
     case '-h' : usage(); break;
     case '-t' :
-        if($argc > 3) {
+        if($argc > MINARGC+1) {
             usage();
         }
 
@@ -34,16 +38,15 @@ switch($argv[1]) {
         $sUrl  = $argv[2];
         break;
     case '-w':
-        if($argc < 3 || $argc > 4) {
+        if($argc < MINARGC+1 || $argc > MAXARGC) {
             usage();
         }
 
-        if($argc == 3) {
+        if(MINARGC+1 == $argc) {
             $sUrl = $argv[2];
         }
-        elseif($argc == 4) {
+        elseif(MAXARGC == $argc) {
             list($option, $seconds) = explode('=', $argv[2]);
-            $iDelay = 0;
             if($option != '-d' || (int)$seconds < 1) {
                 echo 'Warning: Unrecognized option ' . $argv[3] . PHP_EOL;
             } else {
@@ -58,7 +61,7 @@ switch($argv[1]) {
 }
 
 try {
-    $oMageCacheWarmer = new MageCacheWarmer($argv[2], 'echoCallback');
+    $oMageCacheWarmer = new MageCacheWarmer($argv[2], 'echoCallback', $iDelay, $iUnsecure);
     $fSpeedup         = $oMageCacheWarmer->loadSitemap()->$sFunc();
 
     if($sFunc == 'test') {
