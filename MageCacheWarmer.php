@@ -14,6 +14,7 @@ class MageCacheWarmer
     const MAX_TEST_URLS = 10;
 
     private
+        $_iUnsecure,
         $_iDelay,
         $_sSitemapUrl,
         $_aSiteUrls,
@@ -28,11 +29,12 @@ class MageCacheWarmer
     /**
      * Download the sitemap for testing / warming.
      */
-    public function __construct($sSitemapUrl, $cStatusCallback, $iDelay=0)
+    public function __construct($sSitemapUrl, $cStatusCallback, $iDelay, $iUnsecure)
     {
         $this->_sSitemapUrl     = $sSitemapUrl;
         $this->_cStatusCallback = $cStatusCallback;
         $this->_iDelay          = $iDelay;
+        $this->_iUnsecure       = $iUnsecure;
     }
 
     /**
@@ -143,7 +145,18 @@ class MageCacheWarmer
 
             // Note the start time and download the page
             $iPageStartTime = microtime(true);
-            file_get_contents($sUrl, false, $streamContext);
+            $streamContext['http'] = array(
+                    'header' => array(
+                        'User-Agent: WFPC Cache Warmer'
+                    )
+                );
+            if ($this->_iUnsecure) {
+                    $streamContext['ssl'] = array(
+                            'verify_peer'=>false,
+                            'verify_peer_name'=>false,
+                    );
+            }
+            file_get_contents($sUrl,false, stream_context_create($streamContext));
         
             // Update the total download time
             $iTotalDownloadTime += microtime(true) - $iPageStartTime;
@@ -170,19 +183,22 @@ class MageCacheWarmer
                 "$sSitemapUrl is not a valid URL" . PHP_EOL);
         }
         $this->_sSitemapUrl = $sSitemapUrl;
-
+        
         // Stream context for file_get_contents(),
         // some webservers return a 503 error when no user agent is set.
-        $streamContext = stream_context_create(array(
-            'http' => array(
+        $streamContext['http'] = array(
                 'header' => array(
                     'User-Agent: WFPC Cache Warmer'
                 )
-            )
-        ));
-
+            );
+        if ($this->_iUnsecure) {
+                $streamContext['ssl'] = array(
+                        'verify_peer'=>false,
+                        'verify_peer_name'=>false,
+                );
+        }
         // Try downloading the sitemap file
-        $sSitemapXml = file_get_contents($sSitemapUrl, false, $streamContext);
+        $sSitemapXml = file_get_contents($sSitemapUrl, false, stream_context_create($streamContext));
         if(!$sSitemapXml) {
             throw new RuntimeException(
                 'Unable to download the sitemap file at $sSitemapUrl' . PHP_EOL);
