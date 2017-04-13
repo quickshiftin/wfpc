@@ -99,7 +99,7 @@ class MageCacheWarmer
         call_user_func($this->_cStatusCallback, PHP_EOL);
 
         // Finally, test the site again
-        $this->test($sSitemapUrl);
+        $this->test($this->_sSitemapUrl);
 
         $fCachedAvgTime = $this->_fAvgDownloadTime;
 
