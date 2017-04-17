@@ -42,9 +42,9 @@ If you want to put a delay between requests, you can add a `-d=delay-seconds` af
 ```
 #### Test or Run on usecure urls
 ```
+./wfpc -k -t https://192.169.1.234/sitemap.xml
 ./wfpc -k -w https://192.169.1.234/sitemap.xml
-
-
+```
 If you have a large site with a lot of URLs to warm, you might consider running `wfpc` within a [`screen`](http://www.gnu.org/software/screen/manual/screen.html) session.
 
 ## Magento 2 FPC configuration tips
