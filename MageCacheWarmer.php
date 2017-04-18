@@ -21,7 +21,8 @@ class MageCacheWarmer
         $_iNumUrls,
         $_cStatusCallback,
         $_fAvgDownloadTime,
-        $_iTotalDownloadTime;
+        $_iTotalDownloadTime,
+        $_rStreamContext;
 
     public function getAvgDownloadTime()   { return $this->_fAvgDownloadTime;   }
     public function getTotalDownloadTime() { return $this->_iTotalDownloadTime; }
@@ -35,6 +36,7 @@ class MageCacheWarmer
         $this->_cStatusCallback = $cStatusCallback;
         $this->_iDelay          = $iDelay;
         $this->_iUnsecure       = $iUnsecure;
+        $this->_rStreamContext  = $this->_createStreamContext();
     }
 
     /**
@@ -145,18 +147,8 @@ class MageCacheWarmer
 
             // Note the start time and download the page
             $iPageStartTime = microtime(true);
-            $streamContext['http'] = array(
-                    'header' => array(
-                        'User-Agent: WFPC Cache Warmer'
-                    )
-                );
-            if ($this->_iUnsecure) {
-                    $streamContext['ssl'] = array(
-                            'verify_peer'=>false,
-                            'verify_peer_name'=>false,
-                    );
-            }
-            file_get_contents($sUrl,false, stream_context_create($streamContext));
+
+            file_get_contents($sUrl, false, $this->_rStreamContext);
         
             // Update the total download time
             $iTotalDownloadTime += microtime(true) - $iPageStartTime;
@@ -184,21 +176,8 @@ class MageCacheWarmer
         }
         $this->_sSitemapUrl = $sSitemapUrl;
         
-        // Stream context for file_get_contents(),
-        // some webservers return a 503 error when no user agent is set.
-        $streamContext['http'] = array(
-                'header' => array(
-                    'User-Agent: WFPC Cache Warmer'
-                )
-            );
-        if ($this->_iUnsecure) {
-                $streamContext['ssl'] = array(
-                        'verify_peer'=>false,
-                        'verify_peer_name'=>false,
-                );
-        }
         // Try downloading the sitemap file
-        $sSitemapXml = file_get_contents($sSitemapUrl, false, stream_context_create($streamContext));
+        $sSitemapXml = file_get_contents($sSitemapUrl, false, $this->_rStreamContext );
         if(!$sSitemapXml) {
             throw new RuntimeException(
                 'Unable to download the sitemap file at $sSitemapUrl' . PHP_EOL);
@@ -228,6 +207,26 @@ class MageCacheWarmer
 
         $this->_aSiteUrls = $oSitemap->xpath("//sitemap:loc");
         $this->_iNumUrls  = count($this->_aSiteUrls);
+    }
+
+    private function _createStreamContext()
+    {
+        // Stream context for file_get_contents(),
+        // some webservers return a 503 error when no user agent is set.
+        $streamContext['http'] = array(
+            'header' => array(
+                'User-Agent: WFPC Cache Warmer'
+            )
+        );
+
+        if($this->_iUnsecure) {
+            $streamContext['ssl'] = array(
+                'verify_peer'      => false,
+                'verify_peer_name' => false,
+            );
+        }
+
+        return stream_context_create($streamContext);
     }
 
     /**
