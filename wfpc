@@ -16,17 +16,22 @@
 // Load the backend class
 require './MageCacheWarmer.php';
 
-if($argc < 2) {
+define('MINARGC', 2);
+define('MAXARGC', 5);
+
+if($argc < MINARGC) {
     usage();
 }
 
 $sMode  = $argv[1];
 $sFunc  = 'warm';
 $iDelay = 0;
+$iUnsecure = 0;
+// echo "ARGC=$argc\n";
 switch($argv[1]) {
     case '-h' : usage(); break;
     case '-t' :
-        if($argc > 3) {
+        if($argc > MINARGC+1) {
             usage();
         }
 
@@ -34,31 +39,64 @@ switch($argv[1]) {
         $sUrl  = $argv[2];
         break;
     case '-w':
-        if($argc < 3 || $argc > 4) {
+        if($argc < MINARGC+1 || $argc > MAXARGC) {
             usage();
         }
 
-        if($argc == 3) {
+        if(MINARGC+1 == $argc) {
             $sUrl = $argv[2];
-        }
-        elseif($argc == 4) {
+        } elseif(MAXARGC == $argc - 1) {
             list($option, $seconds) = explode('=', $argv[2]);
-            $iDelay = 0;
             if($option != '-d' || (int)$seconds < 1) {
                 echo 'Warning: Unrecognized option ' . $argv[3] . PHP_EOL;
             } else {
                 $iDelay = $seconds;
+                $sUrl = $argv[2];
             }
-
-            $sUrl = $argv[2];
+        } else {
+            usage();
         }
         break;
-    default:
-        usage();
-}
+    case '-k':
+        $iUnsecure = 1;
+        switch($argv[2]) {
+            case '-t' :
+                if($argc > MINARGC+2) {
+                    usage();
+                }
+
+                $sFunc = 'test';
+                $sUrl = $argv[3];
+                break;
+            case '-w':
+                if($argc < MINARGC+2 || $argc > MAXARGC) {
+                    usage();
+                }
+    
+                if(MINARGC+2 == $argc) {
+                    $sUrl = $argv[3];
+                } elseif(MAXARGC == $argc) {
+                    list($option, $seconds) = explode('=', $argv[3]);
+                    if($option != '-d' || (int)$seconds < 1) {
+                        echo 'Warning: Unrecognized option ' . $argv[4] . PHP_EOL;
+                    } else {
+                        $iDelay = $seconds;
+                        $sUrl = $argv[4];
+                    }
+                } else {
+                    usage();
+                }
+                break;
+                default:
+                    usage();
+            }
+            break;
+        default:
+            usage();
+    }
 
 try {
-    $oMageCacheWarmer = new MageCacheWarmer($argv[2], 'echoCallback');
+    $oMageCacheWarmer = new MageCacheWarmer($sUrl, 'echoCallback', $iDelay, $iUnsecure);
     $fSpeedup         = $oMageCacheWarmer->loadSitemap()->$sFunc();
 
     if($sFunc == 'test') {
@@ -100,10 +138,11 @@ function usage()
     echo '-------------------------------------' . PHP_EOL;
     echo 'wfpc - Magento full page cache warmer' . PHP_EOL;
     echo '-------------------------------------' . PHP_EOL . PHP_EOL;
-    echo 'wfpc <-h|-t|-w> [-d=delay] <sitemap url>' . PHP_EOL . PHP_EOL;
+    echo 'wfpc [-k] <-h|-t|-w> [-d=delay] <sitemap url>' . PHP_EOL . PHP_EOL;
     echo 'Run help to see the usage options                       : wfpc -h' . PHP_EOL;
     echo 'Run wfpc in test mode to get an idea of page performance: wfpc -t <sitemap url>' . PHP_EOL;
-    echo 'Warm the Magento cache                                  : wfpc -w [-d=delay] <sitemap url>' . PHP_EOL . PHP_EOL;
+    echo 'Warm the Magento cache                                  : wfpc -w [-d=delay] <sitemap url>' . PHP_EOL ;
+    echo 'Force to continue on unsecure https urls                : wfpc -k -w <sitemap url>'.PHP_EOL. PHP_EOL;
     echo 'The last form of the command allows a -d option to place a pause of X number of seconds between request' . PHP_EOL;
     exit();
 }
