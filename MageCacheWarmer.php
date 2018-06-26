@@ -180,7 +180,7 @@ class MageCacheWarmer
         $sSitemapXml = file_get_contents($sSitemapUrl, false, $this->_rStreamContext );
         if(!$sSitemapXml) {
             throw new RuntimeException(
-                'Unable to download the sitemap file at $sSitemapUrl' . PHP_EOL);
+                "Unable to download the sitemap file at $sSitemapUrl" . PHP_EOL);
         }
 
         return $sSitemapXml;
